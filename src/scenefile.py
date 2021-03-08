@@ -1,11 +1,3 @@
-# {path} = {folder_path}/{descriptor}_{task}_{v###}.{ext}
-# SceneFile
-# - folder_path
-# - task
-# - ver
-# - ext
-# - path (composite)
-# - filename (composite)
 from pathlib import Path
 
 
@@ -32,6 +24,7 @@ class SceneFile(object):
         self.ext = path.suffix
         self.descriptor, self.task, ver = path.stem.split("_")
         self.ver = int(ver.split("v")[-1])
+
 
 scene_file = SceneFile("D:/tank_model_v001.ma")
 print(scene_file.path)
