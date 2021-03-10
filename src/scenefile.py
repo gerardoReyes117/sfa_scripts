@@ -82,7 +82,3 @@ class SceneFile(object):
         """
         self.ver = self.next_avail_ver()
         self.save()
-
-
-# scene_file = scenefile.SceneFile("D:\\School Files\\spring 2021\\sandbox\\tank_model_v001.ma")
-# paste to maya
