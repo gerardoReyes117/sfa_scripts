@@ -33,10 +33,16 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.title_lbl.setStyleSheet("font: bold 20px")
         self.folder_lay = self._create_folder_ui()
         self.filename_lay = self._create_filename_ui()
+        self.save_btn = QtWidgets.QPushButton("Save")
+        self.save_increment_btn = QtWidgets.QPushButton("Save Increment")
+        layout = QtWidgets.QHBoxLayout()
+        layout.addWidget(self.save_btn)
+        layout.addWidget(self.save_increment_btn)
         self.main_lay = QtWidgets.QVBoxLayout()
         self.main_lay.addWidget(self.title_lbl)
         self.main_lay.addLayout(self.folder_lay)
         self.main_lay.addLayout(self.filename_lay)
+        self.main_lay.addLayout(layout)
         self.setLayout(self.main_lay)
 
     def _create_filename_ui(self):
