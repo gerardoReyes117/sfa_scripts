@@ -31,11 +31,11 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.create_connections()
 
     def create_ui(self):
-        self.title_lbl = QtWidgets.QLabel("SmartSave")
+        self.title_lbl = QtWidgets.QLabel("Smart Save")
         self.title_lbl.setStyleSheet("font: bold 20px")
         self.folder_lay = self._create_folder_ui()
         self.filename_lay = self._create_filename_ui()
-        self.button_lay = self._create_button_ui()
+        self.button_lay = self._create_buttons_ui()
         self.main_lay = QtWidgets.QVBoxLayout()
         self.main_lay.addWidget(self.title_lbl)
         self.main_lay.addLayout(self.folder_lay)
@@ -45,7 +45,30 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.setLayout(self.main_lay)
 
     def create_connections(self):
+        """connect signals and slots"""
         self.folder_browse_btn.clicked.connect(self._browse_folder)
+        self.save_btn.clicked.connect(self._save)
+        self.save_inc_btn.clicked.connect(self._save_increment)
+
+    @QtCore.Slot()
+    def _save_increment(self):
+        """save an increment of the scene"""
+        self._set_scenefile_properties_from_ui()
+        self.scenefile.save_increment()
+        self.ver_sbx.setValue(self.scenefile.ver)
+
+    @QtCore.Slot()
+    def _save(self):
+        """save the scene"""
+        self._set_scenefile_properties_from_ui()
+        self.scenefile.save()
+
+    def _set_scenefile_properties_from_ui(self):
+        self.scenefile.folder_path = self.folder_le.text()
+        self.scenefile.descriptor = self.descriptor_le.text()
+        self.scenefile.task = self.task_le.text()
+        self.scenefile.ver = self.ver_sbx.value()
+        self.scenefile.ext = self.ext_lbl.text()
 
     @QtCore.Slot()
     def _browse_folder(self):
@@ -56,12 +79,12 @@ class SmartSaveUI(QtWidgets.QDialog):
                     QtWidgets.QFileDialog.DontResolveSymlinks)
         self.folder_le.setText(folder)
 
-    def _create_button_ui(self):
+    def _create_buttons_ui(self):
         self.save_btn = QtWidgets.QPushButton("Save")
-        self.save_increment_btn = QtWidgets.QPushButton("Save Increment")
+        self.save_inc_btn = QtWidgets.QPushButton("Save Increment")
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.save_btn)
-        layout.addWidget(self.save_increment_btn)
+        layout.addWidget(self.save_inc_btn)
         return layout
 
     def _create_filename_ui(self):
@@ -78,7 +101,7 @@ class SmartSaveUI(QtWidgets.QDialog):
         layout.addWidget(self.descriptor_le, 1, 0)
         layout.addWidget(QtWidgets.QLabel("_"), 1, 1)
         layout.addWidget(self.task_le, 1, 2)
-        layout.addWidget(QtWidgets.QLabel("_"), 1, 3)
+        layout.addWidget(QtWidgets.QLabel("_v"), 1, 3)
         layout.addWidget(self.ver_sbx, 1, 4)
         layout.addWidget(self.ext_lbl, 1, 5)
         return layout
@@ -97,7 +120,7 @@ class SmartSaveUI(QtWidgets.QDialog):
         return layout
 
     def _create_folder_ui(self):
-        default_folder = Path(cmds.workspace(rootDirectory=True, query=True))
+        default_folder = Path(cmds.workspace(query=True, rootDirectory=True))
         default_folder = default_folder / "scenes"
         self.folder_le = QtWidgets.QLineEdit(default_folder)
         self.folder_browse_btn = QtWidgets.QPushButton("...")
@@ -110,8 +133,8 @@ class SmartSaveUI(QtWidgets.QDialog):
 class SceneFile(object):
     """An abstract representation of a Scene file."""
     def __init__(self, path=None):
-        self.folder_path = Path(cmds.workspace(query=True,
-                                               rootDirectory=True)) / "scenes"
+        self._folder_path = Path(cmds.workspace(query=True,
+                                                rootDirectory=True)) / "scenes"
         self.descriptor = 'main'
         self.task = 'model'
         self.ver = 1
@@ -123,6 +146,14 @@ class SceneFile(object):
             log.info("Initialize with default properties.")
             return
         self._init_from_path(path)
+
+    @property
+    def folder_path(self):
+        return self._folder_path
+
+    @folder_path.setter
+    def folder_path(self, val):
+        self._folder_path = Path(val)
 
     @property
     def filename(self):
@@ -172,7 +203,7 @@ class SceneFile(object):
         latest_ver_num = int(latest_scenefile.split("_v")[-1])
         return latest_ver_num + 1
 
-    def increment_save(self):
+    def save_increment(self):
         """Increments the version and saves the scene file.
 
         If the existing version of a file already exists, it should increment
