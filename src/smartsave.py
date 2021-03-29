@@ -38,6 +38,7 @@ class SmartSaveUI(QtWidgets.QDialog):
         self.main_lay.addWidget(self.title_lbl)
         self.main_lay.addLayout(self.folder_lay)
         self.main_lay.addLayout(self.filename_lay)
+        self.main_lay.addStretch()
         self.main_lay.addLayout(self.button_lay)
         self.setLayout(self.main_lay)
 
