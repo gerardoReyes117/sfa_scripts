@@ -57,18 +57,24 @@ class ScatterUI(QtWidgets.QDialog):
         self.main_lay.addLayout(self.button_lay)
         self.setLayout(self.main_lay)
 
-    @QtCore.Slot()
     def create_connections(self):
-        self.select_btn.clicked.connect(self._select_highlighted)
+        self.mount_select_btn.clicked.connect(self._mount_select_highlighted)
+        self.mounted_select_btn.clicked.connect(self.
+                                                _mounted_select_highlighted)
         self.create_btn.clicked.connect(self._create_scatter)
         self.remove_btn.clicked.connect(self._remove_instances_mounted)
         self.alignment_cbox.stateChanged.connect(self._align_normals)
 
     @QtCore.Slot()
-    def _select_highlighted(self):
-        self._set_scatterfile_properties_from_ui()
-        self.scatterfile.selection()
-        self.selected.setValue(self.scatterfile.selected)
+    def _mount_select_highlighted(self):
+        self.scatterfile.select_highlighted()
+        self.mount_selection_le.setText(','.join(self.scatterfile.selection))
+
+    @QtCore.Slot()
+    def _mounted_select_highlighted(self):
+        self.scatterfile.select_highlighted()
+        self.mounted_selection_le.setText(','.join(self.scatterfile.selection))
+
 
     @QtCore.Slot()
     def _align_normals(self):
@@ -82,9 +88,6 @@ class ScatterUI(QtWidgets.QDialog):
     def _remove_instances_mounted(self):
         return
 
-    def _set_scatterfile_properties_from_ui(self):
-        self.scatterfile.selection = self.selection.text()
-
     def _create_bottom_buttons_ui(self):
         self.create_btn = QtWidgets.QPushButton("Create")
         self.remove_btn = QtWidgets.QPushButton("Delete")
@@ -96,17 +99,17 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_mount_ui(self):
         self.mount_title_lbl = QtWidgets.QLabel("Mount")
         self.mount_title_lbl.setStyleSheet("font: bold 16px")
-        self.selection_le = QtWidgets.QLineEdit()
-        self.selection_le.setMinimumWidth(100)
-        self.select_btn = QtWidgets.QPushButton("Select")
+        self.mount_selection_le = QtWidgets.QLineEdit()
+        self.mount_selection_le.setMinimumWidth(100)
+        self.mount_select_btn = QtWidgets.QPushButton("Select")
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.mount_title_lbl, 0, 0)
-        layout.addWidget(self.selection_le, 0, 1)
-        layout.addWidget(self.select_btn, 0, 2)
+        layout.addWidget(self.mount_selection_le, 0, 1)
+        layout.addWidget(self.mount_select_btn, 0, 2)
         return layout
 
     def _create_mount_percent_ui(self):
-        self.mount_percent_title_lbl = QtWidgets.QLabel("Vertice Range")
+        self.mount_percent_title_lbl = QtWidgets.QLabel("Vertex Range")
         self.mount_percent_title_lbl.setStyleSheet("font: bold")
         self.percentage_amount_sbx = QtWidgets.QSpinBox()
         self.percentage_amount_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.
@@ -122,13 +125,13 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_mounted_ui(self):
         self.mounted_title_lbl = QtWidgets.QLabel("Mounted")
         self.mounted_title_lbl.setStyleSheet("font: bold 16px")
-        self.selection_le = QtWidgets.QLineEdit()
-        self.selection_le.setMinimumWidth(100)
-        self.select_btn = QtWidgets.QPushButton("Select")
+        self.mounted_selection_le = QtWidgets.QLineEdit()
+        self.mounted_selection_le.setMinimumWidth(100)
+        self.mounted_select_btn = QtWidgets.QPushButton("Select")
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.mounted_title_lbl, 0, 0)
-        layout.addWidget(self.selection_le, 0, 1)
-        layout.addWidget(self.select_btn, 0, 2)
+        layout.addWidget(self.mounted_selection_le, 0, 1)
+        layout.addWidget(self.mounted_select_btn, 0, 2)
         return layout
 
     def _create_alignment_ui(self):
@@ -239,10 +242,16 @@ class ScatterUI(QtWidgets.QDialog):
 
 class ScatterFile(object):
     """an abstract representation of a scatter file object"""
+    # def __init__(self, selection, scale_range=((1, 1), (1, 1), (1, 1)),
+    #              rotation_range=((0, 0), (0, 0), (0, 0))):
+    #     self.selection = selection
+    #     self.scale_range = scale_range
+    #     self.rotation_range = rotation_range
 
-    @property.setter
-    def selection(self):
-        self.selection = cmds.ls(orderedSelection=True, flatten=True)
+    def select_highlighted(self):
+        self.selection = cmds.ls(orderedSelection=True, flatten=True,
+                                     long=True)
+
 
 #selection = cmds.ls(orderedSelection=True, flatten=True)
 # print(selection)
