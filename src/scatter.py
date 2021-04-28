@@ -30,8 +30,6 @@ class ScatterUI(QtWidgets.QDialog):
         self.create_ui()
         self.create_connections()
 
-        self.setLayout(self.main_lay)
-
     def create_ui(self):
         self.title_lbl = QtWidgets.QLabel("Scatter Tool")
         self.title_lbl.setStyleSheet("font: bold 32px")
@@ -39,7 +37,7 @@ class ScatterUI(QtWidgets.QDialog):
         self.mountpercent_lay = self._create_mount_percent_ui()
         self.mounted_lay = self._create_mounted_ui()
         self.alignment_lay = self._create_alignment_ui()
-        self.instance_lay = self._create_instance_ui()
+        # self.instance_lay = self._create_instance_ui()
         self.scale_lay = self._create_scale_ui()
         self.rotation_lay = self._create_rotation_ui()
         self.scale_lay = self._create_scale_ui()
@@ -50,7 +48,7 @@ class ScatterUI(QtWidgets.QDialog):
         self.main_lay.addLayout(self.mountpercent_lay)
         self.main_lay.addLayout(self.mounted_lay)
         self.main_lay.addLayout(self.alignment_lay)
-        self.main_lay.addLayout(self.instance_lay)
+        # self.main_lay.addLayout(self.instance_lay)
         self.main_lay.addLayout(self.rotation_lay)
         self.main_lay.addLayout(self.scale_lay)
         self.main_lay.addStretch()
@@ -82,11 +80,16 @@ class ScatterUI(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def _create_scatter(self):
-        return
+        self._set_scatterfile_properties_from_ui()
+        self.scatterfile.scatter_instance()
 
     @QtCore.Slot()
     def _remove_instances_mounted(self):
         return
+
+    def _set_scatterfile_properties_from_ui(self):
+        self.scatterfile.mount = self.mount_selection_le.text()
+        self.scatterfile.mounted = self.mounted_selection_le.text()
 
     def _create_bottom_buttons_ui(self):
         self.create_btn = QtWidgets.QPushButton("Create")
@@ -143,17 +146,17 @@ class ScatterUI(QtWidgets.QDialog):
         layout.addWidget(self.alignment_cbox, 0, 1)
         return layout
 
-    def _create_instance_ui(self):
-        self.instances_title_lbl = QtWidgets.QLabel("Instances")
-        self.instances_title_lbl.setStyleSheet("font: bold")
-        self.instance_amount_sbx = QtWidgets.QSpinBox()
-        self.instance_amount_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.
-                                                  PlusMinus)
-        self.instance_amount_sbx.setFixedWidth(50)
-        layout = QtWidgets.QGridLayout()
-        layout.addWidget(self.instances_title_lbl, 0, 0)
-        layout.addWidget(self.instance_amount_sbx, 0, 1)
-        return layout
+    # def _create_instance_ui(self):
+    #     self.instances_title_lbl = QtWidgets.QLabel("Instances")
+    #     self.instances_title_lbl.setStyleSheet("font: bold")
+    #     self.instance_amount_sbx = QtWidgets.QSpinBox()
+    #     self.instance_amount_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.
+    #                                               PlusMinus)
+    #     self.instance_amount_sbx.setFixedWidth(50)
+    #     layout = QtWidgets.QGridLayout()
+    #     layout.addWidget(self.instances_title_lbl, 0, 0)
+    #     layout.addWidget(self.instance_amount_sbx, 0, 1)
+    #     return layout
 
     def _create_scale_sbx_ui(self):
         self.min_xscale_sbx = QtWidgets.QSpinBox()
@@ -242,15 +245,21 @@ class ScatterUI(QtWidgets.QDialog):
 
 class ScatterFile(object):
     """an abstract representation of a scatter file object"""
-    # def __init__(self, selection, scale_range=((1, 1), (1, 1), (1, 1)),
-    #              rotation_range=((0, 0), (0, 0), (0, 0))):
-    #     self.selection = selection
-    #     self.scale_range = scale_range
-    #     self.rotation_range = rotation_range
+    def __init__(self, mount=None, mounted=None, instances=0,
+                 scale_range=((1, 1), (1, 1), (1, 1)),
+                 rotation_range=((0, 0), (0, 0), (0, 0))):
+        self.mount = 'Select object to mount on'
+        self.mounted = 'Select object to mount'
+        self.instances = 0
+        self.scale_range = scale_range
+        self.rotation_range = rotation_range
 
     def select_highlighted(self):
         self.selection = cmds.ls(orderedSelection=True, flatten=True,
-                                     long=True)
+                                 long=True)
+
+    def scatter_instance(self):
+        self.scatter = cmds.instance(self.mounted)
 
 
 #selection = cmds.ls(orderedSelection=True, flatten=True)
