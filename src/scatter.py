@@ -34,7 +34,6 @@ class ScatterUI(QtWidgets.QDialog):
         self.mountpercent_lay = self._create_mount_percent_ui()
         self.mounted_lay = self._create_mounted_ui()
         self.alignment_lay = self._create_alignment_ui()
-        # self.instance_lay = self._create_instance_ui()
         self.scale_lay = self._create_scale_ui()
         self.rotation_lay = self._create_rotation_ui()
         self.scale_lay = self._create_scale_ui()
@@ -45,7 +44,6 @@ class ScatterUI(QtWidgets.QDialog):
         self.main_lay.addLayout(self.mountpercent_lay)
         self.main_lay.addLayout(self.mounted_lay)
         self.main_lay.addLayout(self.alignment_lay)
-        # self.main_lay.addLayout(self.instance_lay)
         self.main_lay.addLayout(self.rotation_lay)
         self.main_lay.addLayout(self.scale_lay)
         self.main_lay.addStretch()
@@ -58,7 +56,7 @@ class ScatterUI(QtWidgets.QDialog):
                                                 _mounted_select_highlighted)
         self.create_btn.clicked.connect(self._create_scatter)
         # self.remove_btn.clicked.connect(self._remove_instances_mounted)
-        self.alignment_cbox.stateChanged.connect(self._align_normals)
+        self.alignment_cbox.stateChanged.connect(self.scatterfile.checked_normal)
 
     @QtCore.Slot()
     def _mount_select_highlighted(self):
@@ -72,18 +70,19 @@ class ScatterUI(QtWidgets.QDialog):
         self.mounted_selection_le.setText(''.join(self.scatterfile.selection))
 
 
-    @QtCore.Slot()
-    def _align_normals(self):
-        return
+    # @QtCore.Slot()
+    # def _align_normals(self):
+    #     self.scatterfile.checked_normal()
 
     @QtCore.Slot()
     def _create_scatter(self):
         self._set_scatterfile_properties_from_ui()
         self.scatterfile.do_scatter_instance()
 
-    # @QtCore.Slot()
-    # def _remove_instances_mounted(self):
-    #     self.scatterfile.delete_created_instances
+    @QtCore.Slot()
+    def _remove_instances_mounted(self):
+        self.scatterfile.delete_created_instances
+
 
     def _set_scatterfile_properties_from_ui(self):
         self.mount_text = self.mount_selection_le.text()
@@ -165,18 +164,6 @@ class ScatterUI(QtWidgets.QDialog):
         layout.addWidget(self.alignment_title_lbl, 0, 0)
         layout.addWidget(self.alignment_cbox, 0, 1)
         return layout
-
-    # def _create_instance_ui(self):
-    #     self.instances_title_lbl = QtWidgets.QLabel("Instances")
-    #     self.instances_title_lbl.setStyleSheet("font: bold")
-    #     self.instance_amount_sbx = QtWidgets.QSpinBox()
-    #     self.instance_amount_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.
-    #                                               PlusMinus)
-    #     self.instance_amount_sbx.setFixedWidth(50)
-    #     layout = QtWidgets.QGridLayout()
-    #     layout.addWidget(self.instances_title_lbl, 0, 0)
-    #     layout.addWidget(self.instance_amount_sbx, 0, 1)
-    #     return layout
 
     def _create_scale_sbx_ui(self):
         self.min_xscale_sbx = QtWidgets.QDoubleSpinBox()
@@ -313,8 +300,23 @@ class ScatterFile(object):
     #     instance_group = cmds.group(empty = True, name=transormName + 'instance+grp#')
     #     cmds.parent(self.mounted_selection_le)
 
-    # def delete_created_instances(self):
+    # def getInstances(self):
     #     instances = []
+    #     iterDag = omui.MItDag(omui.MItDag.kBreadthFirst)
+    #     while not iterDag.isDone():
+    #         instanced = omui.MItDag.isInstanced(iterDag)
+    #         if instanced:
+    #             instances.append(iterDag.fullPathName())
+    #         iterDag.next()
+    #     return instances
+
+    # def delete_created_instances(self):
+    #     cmds.select(self.getInstances())
+    #     cmds.delete(self.getInstances())
+        # sel = cmds.ls(selection=True)
+        # shapes = cmds.listRelatives(sel[0], shapes=True)
+        # cmds.select(cmds.listRelatives(shapes[0], allParents=True))
+        # cmds.delete()
 
 
     def do_scatter_instance(self):
@@ -324,17 +326,25 @@ class ScatterFile(object):
                                               selectionMask=31, expand=True)
         self.vertex_names_percent = int(round(len(self.vertex_names) * self.vertex_percent))
         self.percent_selection = random.sample(self.vertex_names, k=self.vertex_names_percent)
-        cmds.select(self.percent_selection)
         self.vtx = ''
+        cmds.select(self.percent_selection)
         if cmds.objectType(self.mounted, isType="transform"):
             for self.vtx in self.percent_selection:
-                self.scatter = cmds.instance(self.mounted, name="scatter_instance#")
+                self.scatter = cmds.instance(self.mounted,
+                                             name="scatter_instance#")
                 pos = cmds.pointPosition(self.vtx)
                 cmds.move(pos[0], pos[1], pos[2], self.scatter)
                 self.rand_rotation()
                 self.rand_scale()
         else:
             print("Please ensure the first object you select is a transform.")
+
+    def checked_normal(self, align):
+            if align:
+                cmds.normalConstraint(self.percent_selection, self.scatter)
+                cmds.delete(constraints=True)
+            else:
+                print("")
 
     def rand_rotation(self):
         rand_x = random.randrange(self.rotation_range_min[0],
