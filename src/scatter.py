@@ -1,13 +1,10 @@
-import logging
-from random import random
+import random
+
 from PySide2 import QtWidgets, QtCore
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 import maya.cmds as cmds
-import pymel.core as pmc
-from pymel.core.system import Path
-
-log = logging.getLogger(__name__)
+import pymel.core as pm
 
 
 def maya_main_window():
@@ -60,7 +57,7 @@ class ScatterUI(QtWidgets.QDialog):
         self.mounted_select_btn.clicked.connect(self.
                                                 _mounted_select_highlighted)
         self.create_btn.clicked.connect(self._create_scatter)
-        self.remove_btn.clicked.connect(self._remove_instances_mounted)
+        # self.remove_btn.clicked.connect(self._remove_instances_mounted)
         self.alignment_cbox.stateChanged.connect(self._align_normals)
 
     @QtCore.Slot()
@@ -82,38 +79,48 @@ class ScatterUI(QtWidgets.QDialog):
     @QtCore.Slot()
     def _create_scatter(self):
         self._set_scatterfile_properties_from_ui()
-        self.scatterfile.scatter_instance()
+        self.scatterfile.do_scatter_instance()
 
-    @QtCore.Slot()
-    def _remove_instances_mounted(self):
-        self.scatterfile.delete_created_instances
+    # @QtCore.Slot()
+    # def _remove_instances_mounted(self):
+    #     self.scatterfile.delete_created_instances
 
     def _set_scatterfile_properties_from_ui(self):
         self.mount_text = self.mount_selection_le.text()
         self.scatterfile.mount = self.mount_text.split(',')
-        print(self.scatterfile.mount)
-
+        self.scatterfile.vertex_percent = (self.percentage_amount_sbx.value())
         self.scatterfile.mounted = self.mounted_selection_le.text()
+        self._set_rotation_properties_from_ui()
+        self._set_scale_properties_from_ui()
 
-        self.scatterfile.rotation_x_range = (self.min_xrotation_sbx.value(),
-                                             self.max_xrotation_sbx.value())
-        self.scatterfile.rotation_y_range = (self.min_yrotation_sbx.value(),
-                                             self.max_yrotation_sbx.value())
-        self.scatterfile.rotation_range = (self.min_zrotation_sbx.value(),
-                                           self.max_zrotation_sbx.value())
+    def _set_rotation_properties_from_ui(self):
+        self.scatterfile.rotation_range_min[0] = self.min_xrotation_sbx.value()
+        self.scatterfile.rotation_range_min[1] = self.min_yrotation_sbx.value()
+        self.scatterfile.rotation_range_min[2] = self.min_zrotation_sbx.value()
+        self.scatterfile.rotation_range_max[0] = self.max_xrotation_sbx.value()
+        self.scatterfile.rotation_range_max[1] = self.max_yrotation_sbx.value()
+        self.scatterfile.rotation_range_max[2] = self.max_zrotation_sbx.value()
+
+    def _set_scale_properties_from_ui(self):
+        self.scatterfile.scale_range_min[0] = self.min_xscale_sbx.value()
+        self.scatterfile.scale_range_min[1] = self.min_yscale_sbx.value()
+        self.scatterfile.scale_range_min[2] = self.min_zscale_sbx.value()
+        self.scatterfile.scale_range_max[0] = self.max_xscale_sbx.value()
+        self.scatterfile.scale_range_max[1] = self.max_yscale_sbx.value()
+        self.scatterfile.scale_range_max[2] = self.max_zscale_sbx.value()
 
     def _create_bottom_buttons_ui(self):
         self.create_btn = QtWidgets.QPushButton("Create")
-        self.remove_btn = QtWidgets.QPushButton("Delete")
+        # self.remove_btn = QtWidgets.QPushButton("Delete")
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.create_btn)
-        layout.addWidget(self.remove_btn)
+        # layout.addWidget(self.remove_btn)
         return layout
 
     def _create_mount_ui(self):
         self.mount_title_lbl = QtWidgets.QLabel("Mount")
         self.mount_title_lbl.setStyleSheet("font: bold 16px")
-        self.mount_selection_le = QtWidgets.QLineEdit("Select an object to mount.")
+        self.mount_selection_le = QtWidgets.QLineEdit("Select an object to mount on.")
         self.mount_selection_le.setMinimumWidth(100)
         self.mount_select_btn = QtWidgets.QPushButton("Select")
         layout = QtWidgets.QGridLayout()
@@ -125,11 +132,13 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_mount_percent_ui(self):
         self.mount_percent_title_lbl = QtWidgets.QLabel("Vertex Range")
         self.mount_percent_title_lbl.setStyleSheet("font: bold")
-        self.percentage_amount_sbx = QtWidgets.QSpinBox()
+        self.percentage_amount_sbx = QtWidgets.QDoubleSpinBox()
         self.percentage_amount_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.
                                                     PlusMinus)
+        self.percentage_amount_sbx.setSingleStep(.01)
         self.percentage_amount_sbx.setFixedWidth(50)
-        self.percentage_amount_sbx.setMaximum(100)
+        self.percentage_amount_sbx.setMaximum(1)
+        self.percentage_amount_sbx.setValue(1)
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.mount_percent_title_lbl, 0, 0)
         layout.addWidget(self.percentage_amount_sbx, 0, 1)
@@ -170,24 +179,42 @@ class ScatterUI(QtWidgets.QDialog):
     #     return layout
 
     def _create_scale_sbx_ui(self):
-        self.min_xscale_sbx = QtWidgets.QSpinBox()
-        self.min_xscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_xscale_sbx = QtWidgets.QDoubleSpinBox()
+        self.min_xscale_sbx.setButtonSymbols(QtWidgets.QDoubleSpinBox.PlusMinus)
+        self.min_xscale_sbx.setSingleStep(.01)
+        self.min_xscale_sbx.setValue(1)
         self.min_xscale_sbx.setFixedWidth(50)
-        self.max_xscale_sbx = QtWidgets.QSpinBox()
+
+        self.max_xscale_sbx = QtWidgets.QDoubleSpinBox()
         self.max_xscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_xscale_sbx.setSingleStep(.01)
+        self.max_xscale_sbx.setValue(2)
         self.max_xscale_sbx.setFixedWidth(50)
-        self.min_yscale_sbx = QtWidgets.QSpinBox()
+
+        self.min_yscale_sbx = QtWidgets.QDoubleSpinBox()
         self.min_yscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_yscale_sbx.setSingleStep(.01)
+        self.min_yscale_sbx.setValue(1)
         self.min_yscale_sbx.setFixedWidth(50)
-        self.max_yscale_sbx = QtWidgets.QSpinBox()
+
+        self.max_yscale_sbx = QtWidgets.QDoubleSpinBox()
         self.max_yscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_yscale_sbx.setSingleStep(.01)
+        self.max_yscale_sbx.setValue(2)
         self.max_yscale_sbx.setFixedWidth(50)
-        self.min_zscale_sbx = QtWidgets.QSpinBox()
+
+        self.min_zscale_sbx = QtWidgets.QDoubleSpinBox()
         self.min_zscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_zscale_sbx.setSingleStep(.01)
+        self.min_zscale_sbx.setValue(1)
         self.min_zscale_sbx.setFixedWidth(50)
-        self.max_zscale_sbx = QtWidgets.QSpinBox()
+
+        self.max_zscale_sbx = QtWidgets.QDoubleSpinBox()
         self.max_zscale_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_zscale_sbx.setSingleStep(.01)
+        self.max_zscale_sbx.setValue(2)
         self.max_zscale_sbx.setFixedWidth(50)
+
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.max_xscale_sbx, 1, 1)
         layout.addWidget(self.min_xscale_sbx, 2, 1)
@@ -214,22 +241,37 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_rotation_sbx_ui(self):
         self.min_xrotation_sbx = QtWidgets.QSpinBox()
         self.min_xrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_xrotation_sbx.setMaximum(360)
         self.min_xrotation_sbx.setFixedWidth(50)
+
         self.max_xrotation_sbx = QtWidgets.QSpinBox()
         self.max_xrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_xrotation_sbx.setRange(1, 360)
+        self.max_xrotation_sbx.setValue(360)
         self.max_xrotation_sbx.setFixedWidth(50)
+
         self.min_yrotation_sbx = QtWidgets.QSpinBox()
         self.min_yrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_yrotation_sbx.setMaximum(360)
         self.min_yrotation_sbx.setFixedWidth(50)
+
         self.max_yrotation_sbx = QtWidgets.QSpinBox()
         self.max_yrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_yrotation_sbx.setRange(1, 360)
+        self.max_yrotation_sbx.setValue(360)
         self.max_yrotation_sbx.setFixedWidth(50)
+
         self.min_zrotation_sbx = QtWidgets.QSpinBox()
         self.min_zrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.min_zrotation_sbx.setMaximum(360)
         self.min_zrotation_sbx.setFixedWidth(50)
+
         self.max_zrotation_sbx = QtWidgets.QSpinBox()
         self.max_zrotation_sbx.setButtonSymbols(QtWidgets.QAbstractSpinBox.PlusMinus)
+        self.max_zrotation_sbx.setRange(1, 360)
+        self.max_zrotation_sbx.setValue(360)
         self.max_zrotation_sbx.setFixedWidth(50)
+
         layout = QtWidgets.QGridLayout()
         layout.addWidget(self.max_xrotation_sbx, 1, 1)
         layout.addWidget(self.min_xrotation_sbx, 2, 1)
@@ -256,77 +298,59 @@ class ScatterUI(QtWidgets.QDialog):
 
 class ScatterFile(object):
     """an abstract representation of a scatter file object"""
-    def __init__(self,
-                 scale_range=((1, 1), (1, 1), (1, 1)),
-                 rotation_x_range=(0, 0),
-                 rotation_y_range=(0, 0),
-                 rotation_z_range=(0, 0)):
+    def __init__(self):
         self.mount = ''
         self.mounted = ''
-        self.scale_range = scale_range
-        self.rotation_x_range = rotation_x_range
-        self.rotation_y_range = rotation_y_range
-        self.rotation_z_range = rotation_z_range
+        self.scale_range_min = [1, 1, 1]
+        self.scale_range_max = [2, 2, 2]
+        self.rotation_range_min = [0, 0, 0]
+        self.rotation_range_max = [360, 360, 360]
 
     def select_highlighted(self):
         self.selection = cmds.ls(orderedSelection=True, flatten=True,
                                  long=True)
-
     # def group_instances(self):
     #     instance_group = cmds.group(empty = True, name=transormName + 'instance+grp#')
     #     cmds.parent(self.mounted_selection_le)
 
-    def delete_created_instances(self):
-        instances = []
+    # def delete_created_instances(self):
+    #     instances = []
 
 
-    def scatter_instance(self):
+    def do_scatter_instance(self):
+        self.vertex_names = cmds.polyListComponentConversion(self.selection,
+                                                             toVertex=True)
         self.vertex_names = cmds.filterExpand(self.mount,
                                               selectionMask=31, expand=True)
-        print(self.vertex_names)
-        self.vertex = ""
+        self.vertex_names_percent = int(round(len(self.vertex_names) * self.vertex_percent))
+        self.percent_selection = random.sample(self.vertex_names, k=self.vertex_names_percent)
+        cmds.select(self.percent_selection)
+        self.vtx = ''
         if cmds.objectType(self.mounted, isType="transform"):
-            for self.vertex in self.vertex_names:
-                self.scatter = cmds.instance(self.mounted, name="self.mounted#")
-                pos = cmds.pointPosition(self.vertex)
+            for self.vtx in self.percent_selection:
+                self.scatter = cmds.instance(self.mounted, name="scatter_instance#")
+                pos = cmds.pointPosition(self.vtx)
                 cmds.move(pos[0], pos[1], pos[2], self.scatter)
-
-                # pos = cmds.xform(self.mount, query=True, translation=True)
-                # cmds.xform(self.scatter, translation=self.scatter)
-
-                # print(self.rotation_y_range)
-                # xRot = random(self.rotation_x_range)
-                # yRot = random(self.rotation_y_range)
-                # print(self.rotation_y_range)
-                # zRot = random(self.rotation_z_range)
-                # cmds.rotate(self.rotation_x_range, self.rotation_y_range,
-                #             self.rotation_z_range)
+                self.rand_rotation()
+                self.rand_scale()
         else:
             print("Please ensure the first object you select is a transform.")
 
+    def rand_rotation(self):
+        rand_x = random.randrange(self.rotation_range_min[0],
+                                  self.rotation_range_max[0])
+        rand_y = random.randrange(self.rotation_range_min[1],
+                                  self.rotation_range_max[1])
+        rand_z = random.randrange(self.rotation_range_min[2],
+                                  self.rotation_range_max[2])
+        cmds.rotate(rand_x, rand_y, rand_z, self.scatter)
 
-#selection = cmds.ls(orderedSelection=True, flatten=True)
-# print(selection)
-# vtx_selection = cmds.polyListComponentConversion(selection, toVertex=True)
-# print(cmds.filterExpand(vtx_selection, selectionMask=31, expand=True))]
-# cmds.select(vtx_selection)
-# for obj in selection:
-#     if 'vtx[' not in obj:
-#         selection.remove(obj)
-# print(selection)
-# cmds.filterExpand(selection, selectionMask=31, expand=True)
-# for obj in selection:
-#     print(cmds.ls(obj + ".vtx[*]", flatten=True))
-# vtx_selection = cmds.polyListComponentConversion("pSphere1", toVertex=True)
-# vtx_selection = cmds.filterExpand(vtx_selection, selectionMask=31)
-# -cmds.select(vtx_selection)
-# scattered_instances = []
-# for vtx in vtx_selection:
-#     scatter_instance = cmds.instance("pCube1", name="pCube5")
-#     scattered_instances.extend(scatter_instance)
-#    #pos = cmds.xform([vtx], query=True, translation=True)
-#     pos = cmds.pointPosition([vtx])
-#     cmds.xform(scatter_instance, translation=pos)
-#
-# cmds.group(scattered_instances, name="scattered")
-# cmds.select(vtx_selection)
+    def rand_scale(self):
+        rands_x = random.uniform(self.scale_range_min[0],
+                                   self.scale_range_max[0])
+        print(rands_x)
+        rands_y = random.uniform(self.scale_range_min[1],
+                                   self.scale_range_max[1])
+        rands_z = random.uniform(self.scale_range_min[2],
+                                   self.scale_range_max[2])
+        cmds.scale(rands_x, rands_y, rands_z, self.scatter)
