@@ -55,7 +55,7 @@ class ScatterUI(QtWidgets.QDialog):
         self.mounted_select_btn.clicked.connect(self.
                                                 _mounted_select_highlighted)
         self.create_btn.clicked.connect(self._create_scatter)
-        # self.remove_btn.clicked.connect(self._remove_instances_mounted)
+        self.remove_btn.clicked.connect(self._remove_instances_mounted)
         self.alignment_cbox.stateChanged.connect(self.scatterfile.checked_normal)
 
     @QtCore.Slot()
@@ -110,10 +110,10 @@ class ScatterUI(QtWidgets.QDialog):
 
     def _create_bottom_buttons_ui(self):
         self.create_btn = QtWidgets.QPushButton("Create")
-        # self.remove_btn = QtWidgets.QPushButton("Delete")
+        self.remove_btn = QtWidgets.QPushButton("Delete")
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.create_btn)
-        # layout.addWidget(self.remove_btn)
+        layout.addWidget(self.remove_btn)
         return layout
 
     def _create_mount_ui(self):
@@ -310,13 +310,10 @@ class ScatterFile(object):
     #         iterDag.next()
     #     return instances
 
-    # def delete_created_instances(self):
-    #     cmds.select(self.getInstances())
-    #     cmds.delete(self.getInstances())
-        # sel = cmds.ls(selection=True)
-        # shapes = cmds.listRelatives(sel[0], shapes=True)
-        # cmds.select(cmds.listRelatives(shapes[0], allParents=True))
-        # cmds.delete()
+    def delete_created_instances(self):
+        sel = cmds.ls(selection=True)
+        shapes = cmds.listRelatives(sel[0], shapes=True)
+        cmds.delete(cmds.listRelatives(shapes[0], allParents=True))
 
 
     def do_scatter_instance(self):
