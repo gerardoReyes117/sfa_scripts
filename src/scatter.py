@@ -1,5 +1,5 @@
 import logging
-
+from random import random
 from PySide2 import QtWidgets, QtCore
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
@@ -68,10 +68,11 @@ class ScatterUI(QtWidgets.QDialog):
         self.scatterfile.select_highlighted()
         self.mount_selection_le.setText(','.join(self.scatterfile.selection))
 
+
     @QtCore.Slot()
     def _mounted_select_highlighted(self):
         self.scatterfile.select_highlighted()
-        self.mounted_selection_le.setText(','.join(self.scatterfile.selection))
+        self.mounted_selection_le.setText(''.join(self.scatterfile.selection))
 
 
     @QtCore.Slot()
@@ -85,11 +86,21 @@ class ScatterUI(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def _remove_instances_mounted(self):
-        return
+        self.scatterfile.delete_created_instances
 
     def _set_scatterfile_properties_from_ui(self):
-        self.scatterfile.mount = self.mount_selection_le.text()
+        self.mount_text = self.mount_selection_le.text()
+        self.scatterfile.mount = self.mount_text.split(',')
+        print(self.scatterfile.mount)
+
         self.scatterfile.mounted = self.mounted_selection_le.text()
+
+        self.scatterfile.rotation_x_range = (self.min_xrotation_sbx.value(),
+                                             self.max_xrotation_sbx.value())
+        self.scatterfile.rotation_y_range = (self.min_yrotation_sbx.value(),
+                                             self.max_yrotation_sbx.value())
+        self.scatterfile.rotation_range = (self.min_zrotation_sbx.value(),
+                                           self.max_zrotation_sbx.value())
 
     def _create_bottom_buttons_ui(self):
         self.create_btn = QtWidgets.QPushButton("Create")
@@ -102,7 +113,7 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_mount_ui(self):
         self.mount_title_lbl = QtWidgets.QLabel("Mount")
         self.mount_title_lbl.setStyleSheet("font: bold 16px")
-        self.mount_selection_le = QtWidgets.QLineEdit()
+        self.mount_selection_le = QtWidgets.QLineEdit("Select an object to mount.")
         self.mount_selection_le.setMinimumWidth(100)
         self.mount_select_btn = QtWidgets.QPushButton("Select")
         layout = QtWidgets.QGridLayout()
@@ -128,7 +139,7 @@ class ScatterUI(QtWidgets.QDialog):
     def _create_mounted_ui(self):
         self.mounted_title_lbl = QtWidgets.QLabel("Mounted")
         self.mounted_title_lbl.setStyleSheet("font: bold 16px")
-        self.mounted_selection_le = QtWidgets.QLineEdit()
+        self.mounted_selection_le = QtWidgets.QLineEdit("Select an object to be mounted.")
         self.mounted_selection_le.setMinimumWidth(100)
         self.mounted_select_btn = QtWidgets.QPushButton("Select")
         layout = QtWidgets.QGridLayout()
@@ -245,21 +256,53 @@ class ScatterUI(QtWidgets.QDialog):
 
 class ScatterFile(object):
     """an abstract representation of a scatter file object"""
-    def __init__(self, mount=None, mounted=None, instances=0,
+    def __init__(self,
                  scale_range=((1, 1), (1, 1), (1, 1)),
-                 rotation_range=((0, 0), (0, 0), (0, 0))):
-        self.mount = 'Select object to mount on'
-        self.mounted = 'Select object to mount'
-        self.instances = 0
+                 rotation_x_range=(0, 0),
+                 rotation_y_range=(0, 0),
+                 rotation_z_range=(0, 0)):
+        self.mount = ''
+        self.mounted = ''
         self.scale_range = scale_range
-        self.rotation_range = rotation_range
+        self.rotation_x_range = rotation_x_range
+        self.rotation_y_range = rotation_y_range
+        self.rotation_z_range = rotation_z_range
 
     def select_highlighted(self):
         self.selection = cmds.ls(orderedSelection=True, flatten=True,
                                  long=True)
 
+    # def group_instances(self):
+    #     instance_group = cmds.group(empty = True, name=transormName + 'instance+grp#')
+    #     cmds.parent(self.mounted_selection_le)
+
+    def delete_created_instances(self):
+        instances = []
+
+
     def scatter_instance(self):
-        self.scatter = cmds.instance(self.mounted)
+        self.vertex_names = cmds.filterExpand(self.mount,
+                                              selectionMask=31, expand=True)
+        print(self.vertex_names)
+        self.vertex = ""
+        if cmds.objectType(self.mounted, isType="transform"):
+            for self.vertex in self.vertex_names:
+                self.scatter = cmds.instance(self.mounted, name="self.mounted#")
+                pos = cmds.pointPosition(self.vertex)
+                cmds.move(pos[0], pos[1], pos[2], self.scatter)
+
+                # pos = cmds.xform(self.mount, query=True, translation=True)
+                # cmds.xform(self.scatter, translation=self.scatter)
+
+                # print(self.rotation_y_range)
+                # xRot = random(self.rotation_x_range)
+                # yRot = random(self.rotation_y_range)
+                # print(self.rotation_y_range)
+                # zRot = random(self.rotation_z_range)
+                # cmds.rotate(self.rotation_x_range, self.rotation_y_range,
+                #             self.rotation_z_range)
+        else:
+            print("Please ensure the first object you select is a transform.")
 
 
 #selection = cmds.ls(orderedSelection=True, flatten=True)
